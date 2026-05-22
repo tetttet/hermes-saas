@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
+
 "use client";
 
-import Image from "next/image";
 import React, { type FormEvent, useState } from "react";
 import type {
   GenerateImageErrorResponse,
@@ -8,11 +9,35 @@ import type {
   GenerateImageSuccessResponse,
 } from "@/lib/image-generation";
 
+const getPreviewAspectRatio = (imageUrl: string) => {
+  if (!imageUrl) {
+    return "1 / 1";
+  }
+
+  try {
+    const url = new URL(imageUrl);
+    const width = Number(url.searchParams.get("width"));
+    const height = Number(url.searchParams.get("height"));
+
+    if (
+      Number.isFinite(width) &&
+      Number.isFinite(height) &&
+      width > 0 &&
+      height > 0
+    ) {
+      return `${width} / ${height}`;
+    }
+  } catch {}
+
+  return "1 / 1";
+};
+
 const TestPage = () => {
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const previewAspectRatio = getPreviewAspectRatio(imageUrl);
 
   const generateImage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -93,40 +118,49 @@ const TestPage = () => {
         <div>
           <h2 className="mb-4 text-2xl font-semibold">Result</h2>
 
-          <div className="relative flex min-h-[420px] items-center justify-center overflow-hidden rounded-3xl border border-dashed border-slate-700 bg-slate-950">
-            {!imageUrl && !loading && (
-              <p className="text-slate-500">Картинка появится здесь</p>
-            )}
+          <div className="overflow-hidden rounded-3xl border border-dashed border-slate-700 bg-slate-950">
+            <div
+              className="relative w-full"
+              style={{ aspectRatio: previewAspectRatio }}
+            >
+              {!imageUrl && !loading && (
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <p className="text-slate-500">Картинка появится здесь</p>
+                </div>
+              )}
 
-            {loading && (
-              <p className="absolute text-slate-400">Генерируется...</p>
-            )}
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <p className="text-slate-400">Генерируется...</p>
+                </div>
+              )}
 
-            {error && (
-              <p className="absolute px-4 text-center text-red-400">{error}</p>
-            )}
+              {error && (
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <p className="px-4 text-center text-red-400">{error}</p>
+                </div>
+              )}
 
-            {imageUrl && (
-              <Image
-                key={imageUrl}
-                src={imageUrl}
-                alt="Generated result"
-                fill
-                unoptimized
-                sizes="(min-width: 768px) 50vw, 100vw"
-                className="object-cover"
-                onLoad={() => {
-                  setLoading(false);
-                  setError("");
-                }}
-                onError={() => {
-                  setLoading(false);
-                  setError(
-                    "Не удалось загрузить картинку. Попробуй другой prompt.",
-                  );
-                }}
-              />
-            )}
+              {imageUrl && (
+                <img
+                  key={imageUrl}
+                  src={imageUrl}
+                  alt="Generated result"
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 h-full w-full object-contain"
+                  onLoad={() => {
+                    setLoading(false);
+                    setError("");
+                  }}
+                  onError={() => {
+                    setLoading(false);
+                    setError(
+                      "Не удалось загрузить картинку. Попробуй другой prompt.",
+                    );
+                  }}
+                />
+              )}
+            </div>
           </div>
 
           {imageUrl && (

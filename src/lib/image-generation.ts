@@ -19,8 +19,10 @@ export type GenerateImageSuccessResponse = {
 };
 
 const POLLINATIONS_BASE_URL = "https://image.pollinations.ai/prompt";
-const DEFAULT_IMAGE_WIDTH = 768;
-const DEFAULT_IMAGE_HEIGHT = 768;
+const DEFAULT_IMAGE_WIDTH = 1024;
+const DEFAULT_IMAGE_HEIGHT = 1024;
+const WIDESCREEN_IMAGE_WIDTH = 1280;
+const WIDESCREEN_IMAGE_HEIGHT = 720;
 
 const styleDirections: Record<string, string> = {
   Cinematic:
@@ -55,7 +57,6 @@ export const buildImagePrompt = ({
   prompt,
   style,
   aspectRatio,
-  resolution,
   quality,
   seed,
 }: GenerateImageRequestBody) => {
@@ -67,7 +68,6 @@ export const buildImagePrompt = ({
     aspectRatio
       ? `Composition: ${aspectRatioDirections[aspectRatio] ?? `match the ${aspectRatio} frame`}.`
       : null,
-    resolution ? `Output target: ${resolution}.` : null,
     quality
       ? `Quality target: ${qualityDirections[quality] ?? quality.toLowerCase()}.`
       : null,
@@ -78,6 +78,20 @@ export const buildImagePrompt = ({
 };
 
 const formatResolution = (width: number, height: number) => `${width}×${height}`;
+
+const getDefaultDimensions = (aspectRatio?: string) => {
+  if (aspectRatio === "16:9") {
+    return {
+      width: WIDESCREEN_IMAGE_WIDTH,
+      height: WIDESCREEN_IMAGE_HEIGHT,
+    };
+  }
+
+  return {
+    width: DEFAULT_IMAGE_WIDTH,
+    height: DEFAULT_IMAGE_HEIGHT,
+  };
+};
 
 const normalizeDimensionsForAspectRatio = (
   width: number,
@@ -97,8 +111,12 @@ const normalizeDimensionsForAspectRatio = (
 };
 
 const parseResolution = (resolution?: string, aspectRatio?: string) => {
+  if (aspectRatio === "16:9") {
+    return getDefaultDimensions(aspectRatio);
+  }
+
   if (!resolution) {
-    return { width: DEFAULT_IMAGE_WIDTH, height: DEFAULT_IMAGE_HEIGHT };
+    return getDefaultDimensions(aspectRatio);
   }
 
   const match = resolution.match(/^(\d+)[×x](\d+)$/);
@@ -106,7 +124,7 @@ const parseResolution = (resolution?: string, aspectRatio?: string) => {
   const height = match ? Number(match[2]) : Number.NaN;
 
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    return { width: DEFAULT_IMAGE_WIDTH, height: DEFAULT_IMAGE_HEIGHT };
+    return getDefaultDimensions(aspectRatio);
   }
 
   return normalizeDimensionsForAspectRatio(width, height, aspectRatio);
@@ -119,18 +137,25 @@ export const buildPollinationsImageUrl = (
   requestBody: GenerateImageRequestBody,
 ) => {
   const composedPrompt = buildImagePrompt(requestBody);
+  const encodedPrompt = encodeURIComponent(composedPrompt);
   const { width, height } = parseResolution(
     requestBody.resolution,
     requestBody.aspectRatio,
   );
   const normalizedSeed = normalizeImageSeed(requestBody.seed);
+  const cacheBust = String(Date.now());
+  const imageUrl = new URL(`${POLLINATIONS_BASE_URL}/${encodedPrompt}`);
 
-  const imageUrl =
-    `${POLLINATIONS_BASE_URL}/${encodeURIComponent(composedPrompt)}` +
-    `?width=${width}&height=${height}&seed=${encodeURIComponent(normalizedSeed)}&nologo=true`;
+  imageUrl.searchParams.set("width", String(width));
+  imageUrl.searchParams.set("height", String(height));
+  imageUrl.searchParams.set("seed", normalizedSeed);
+  imageUrl.searchParams.set("nologo", "true");
+  imageUrl.searchParams.set("cacheBust", cacheBust);
+
+  const finalImageUrl = imageUrl.toString();
 
   return {
-    imageUrl,
+    imageUrl: finalImageUrl,
     seed: normalizedSeed,
     composedPrompt,
     resolution: formatResolution(width, height),

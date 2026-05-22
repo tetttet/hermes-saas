@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { aspectRatioLabels } from "./constants";
 import type { AspectRatio } from "./types";
-import { toCssAspectRatio } from "./utils";
+import { aspectRatioToCssValue } from "./utils";
 
 type GallerySkeletonCardProps = {
   aspectRatio: AspectRatio;
@@ -17,7 +17,7 @@ export const GallerySkeletonCard = ({
     <div
       className="relative overflow-hidden rounded-[20px] border border-white/8 bg-[#101116] p-4"
       style={{
-        aspectRatio: toCssAspectRatio("", aspectRatio),
+        aspectRatio: aspectRatioToCssValue(aspectRatio),
       }}
     >
       <div className="absolute inset-0 animate-[shimmerMove_2s_linear_infinite] bg-gradient-to-r from-transparent via-white/8 to-transparent" />

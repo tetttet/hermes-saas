@@ -4,7 +4,7 @@ export const GalleryEmptyState = () => (
   <div className="relative flex min-h-[420px] items-center justify-center p-4 sm:min-h-[460px]">
     <div className="mx-auto max-w-[24rem] text-center">
       <div className="mx-auto flex w-fit items-center justify-center rounded-[32px]">
-        <div className="rounded-[26px] bg-white p-3 shadow-[0_12px_38px_rgba(255,255,255,0.12)]">
+        <div className="rounded-[26px] bg-white p-3 shadow-[0_12px_38px_rgba(255,255,255,0.3)]">
           <Image
             src="/logo.png"
             alt="Hermes logo"

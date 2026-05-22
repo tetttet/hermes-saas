@@ -5,6 +5,7 @@ export const DEFAULT_ASPECT_RATIO: AspectRatio = "1:1";
 
 export const resolutions: Record<AspectRatio, string[]> = {
   "1:1": ["1024×1024", "1536×1536", "2048×2048"],
+  "16:9": ["1280×720"],
 };
 
 export const getDefaultResolution = (aspectRatio: AspectRatio) =>
@@ -30,7 +31,8 @@ export const styles: Style[] = [
 export const qualityOptions: Quality[] = ["Standard", "HD", "Ultra"];
 
 export const aspectRatioLabels: Record<AspectRatio, string> = {
-  "1:1": "Square",
+  "1:1": "1:1",
+  "16:9": "16:9",
 };
 
 export const selectClassName =

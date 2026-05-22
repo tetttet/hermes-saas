@@ -13,7 +13,7 @@ type ImageCreatorGalleryProps = {
   errorDetails: string[];
   onClearGallery: () => void;
   onDownload: (item: GeneratedImageItem) => void;
-  onImageLoad: (id: string) => void;
+  onImageLoad: (id: string, naturalWidth: number, naturalHeight: number) => void;
   onImageError: (id: string) => void;
 };
 

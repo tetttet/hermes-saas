@@ -1,5 +1,8 @@
 import type { AspectRatio, GeneratedImageItem } from "./types";
 
+export const aspectRatioToCssValue = (aspectRatio: AspectRatio) =>
+  aspectRatio.replace(":", " / ");
+
 export const toCssAspectRatio = (resolution: string, fallback: AspectRatio) => {
   const [width, height] = resolution.split("×").map((value) => Number(value));
 
@@ -12,7 +15,7 @@ export const toCssAspectRatio = (resolution: string, fallback: AspectRatio) => {
     return `${width} / ${height}`;
   }
 
-  return fallback.replace(":", " / ");
+  return aspectRatioToCssValue(fallback);
 };
 
 const slugify = (value: string) =>
@@ -43,10 +46,23 @@ export const formatCreatedAt = (timestamp: number) =>
     minute: "2-digit",
   }).format(timestamp);
 
+export const formatActualImageSize = (item: GeneratedImageItem) => {
+  if (
+    Number.isFinite(item.naturalWidth) &&
+    Number.isFinite(item.naturalHeight) &&
+    (item.naturalWidth ?? 0) > 0 &&
+    (item.naturalHeight ?? 0) > 0
+  ) {
+    return `${item.naturalWidth}×${item.naturalHeight}`;
+  }
+
+  return item.resolution;
+};
+
 export const buildImageTags = (item: GeneratedImageItem) =>
   [
     item.style,
     item.quality,
     item.aspectRatio,
-    item.resolution,
+    formatActualImageSize(item),
   ].filter((value): value is string => Boolean(value));

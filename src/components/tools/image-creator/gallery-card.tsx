@@ -7,12 +7,16 @@ import {
   DownloadIcon,
 } from "@/components/icons/image-creator-icons";
 import type { GeneratedImageItem } from "./types";
-import { buildImageTags, formatCreatedAt, toCssAspectRatio } from "./utils";
+import {
+  aspectRatioToCssValue,
+  buildImageTags,
+  formatCreatedAt,
+} from "./utils";
 
 type ImageGalleryCardProps = {
   item: GeneratedImageItem;
   onDownload: (item: GeneratedImageItem) => void;
-  onImageLoad: (id: string) => void;
+  onImageLoad: (id: string, naturalWidth: number, naturalHeight: number) => void;
   onImageError: (id: string) => void;
 };
 
@@ -45,22 +49,28 @@ export const ImageGalleryCard = ({
         className="relative cursor-pointer outline-none"
       >
         <div
-          className="relative overflow-hidden rounded-[20px] border border-white/8"
+          className="relative overflow-hidden rounded-[20px] border border-white/8 bg-[#131419]"
           style={{
-            aspectRatio: toCssAspectRatio(item.resolution, item.aspectRatio),
+            aspectRatio: aspectRatioToCssValue(item.aspectRatio),
           }}
         >
-          <div className="relative h-full w-full">
+          <div className="absolute inset-0">
             <img
               key={item.url}
               src={item.url}
               alt={item.basePrompt}
               referrerPolicy="no-referrer"
               loading="lazy"
-              onLoad={() => onImageLoad(item.id)}
+              onLoad={(event) => {
+                onImageLoad(
+                  item.id,
+                  event.currentTarget.naturalWidth,
+                  event.currentTarget.naturalHeight,
+                );
+              }}
               onError={() => onImageError(item.id)}
               className={[
-                "h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]",
+                "absolute inset-0 h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]",
                 item.loadState === "ready" ? "opacity-100" : "opacity-0",
               ].join(" ")}
             />

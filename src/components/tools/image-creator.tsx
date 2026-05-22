@@ -146,8 +146,16 @@ const ImageCreator = () => {
     void downloadGeneratedImage(item);
   };
 
-  const handleGeneratedImageLoad = (id: string) => {
-    updateGalleryItem(id, { loadState: "ready" });
+  const handleGeneratedImageLoad = (
+    id: string,
+    naturalWidth: number,
+    naturalHeight: number,
+  ) => {
+    updateGalleryItem(id, {
+      loadState: "ready",
+      naturalWidth,
+      naturalHeight,
+    });
   };
 
   const handleGeneratedImageError = (id: string) => {
