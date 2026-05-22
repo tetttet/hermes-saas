@@ -1,0 +1,37 @@
+import type { AspectRatio, Quality, Style } from "./types";
+
+export const MAX_GALLERY_ITEMS = 8;
+export const DEFAULT_ASPECT_RATIO: AspectRatio = "1:1";
+
+export const resolutions: Record<AspectRatio, string[]> = {
+  "1:1": ["1024×1024", "1536×1536", "2048×2048"],
+};
+
+export const getDefaultResolution = (aspectRatio: AspectRatio) =>
+  resolutions[aspectRatio][0];
+
+export const getSafeResolution = (
+  aspectRatio: AspectRatio,
+  resolution?: string,
+) =>
+  resolution && resolutions[aspectRatio].includes(resolution)
+    ? resolution
+    : getDefaultResolution(aspectRatio);
+
+export const styles: Style[] = [
+  "Cinematic",
+  "Photoreal",
+  "Editorial",
+  "3D Render",
+  "Fashion",
+  "Minimal",
+];
+
+export const qualityOptions: Quality[] = ["Standard", "HD", "Ultra"];
+
+export const aspectRatioLabels: Record<AspectRatio, string> = {
+  "1:1": "Square",
+};
+
+export const selectClassName =
+  "h-10 w-full appearance-none rounded-[16px] border border-white/10 bg-[#121317] px-3 pr-10 text-xs font-bold text-white outline-none transition focus:border-[#2563eb]/70 focus:ring-4 focus:ring-[#2563eb]/10";
