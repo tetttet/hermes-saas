@@ -3,6 +3,8 @@ import type { GenerateImageErrorResponse } from "@/lib/image-generation";
 export const runtime = "nodejs";
 
 const ALLOWED_IMAGE_HOSTNAMES = new Set(["image.pollinations.ai"]);
+const POLLINATIONS_IMAGE_ACCEPT_HEADER =
+  "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8";
 
 const jsonError = (error: string, status: number, details?: string[]) =>
   Response.json(
@@ -86,6 +88,9 @@ export async function POST(request: Request) {
 
   try {
     upstreamResponse = await fetch(parsedUrl, {
+      headers: {
+        Accept: POLLINATIONS_IMAGE_ACCEPT_HEADER,
+      },
       cache: "no-store",
     });
   } catch {
@@ -110,15 +115,20 @@ export async function POST(request: Request) {
     ]);
   }
 
-  const imageBuffer = await upstreamResponse.arrayBuffer();
   const filename = sanitizeFilename(optionalString(payload.filename));
+  const contentLength = upstreamResponse.headers.get("content-length");
 
-  return new Response(imageBuffer, {
-    headers: {
-      "Cache-Control": "no-store",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Content-Length": String(imageBuffer.byteLength),
-      "Content-Type": contentType,
-    },
+  const responseHeaders = new Headers({
+    "Cache-Control": "no-store",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Type": contentType,
+  });
+
+  if (contentLength) {
+    responseHeaders.set("Content-Length", contentLength);
+  }
+
+  return new Response(upstreamResponse.body, {
+    headers: responseHeaders,
   });
 }

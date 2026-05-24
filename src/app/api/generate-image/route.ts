@@ -1,5 +1,4 @@
 import {
-  buildInternalImageUrl,
   buildPollinationsImageUrl,
   type GenerateImageErrorResponse,
   type GenerateImageRequestBody,
@@ -59,11 +58,10 @@ export async function POST(request: Request) {
   };
 
   const { sourceUrl, seed, resolution } = buildPollinationsImageUrl(requestBody);
-  const requestId = crypto.randomUUID();
 
   return Response.json(
     {
-      imageUrl: buildInternalImageUrl(sourceUrl, requestId),
+      imageUrl: sourceUrl,
       seed,
       resolution,
     } satisfies GenerateImageSuccessResponse,
