@@ -24,6 +24,7 @@ export type GeneratedImageItem = {
   style: Style;
   quality: Quality;
   seed?: string;
+  retryCount: number;
   createdAt: number;
   loadState: "loading" | "ready" | "error";
 };

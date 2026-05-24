@@ -7,7 +7,7 @@ export type SiteNavItem = {
 export const navItems: SiteNavItem[] = [
   { href: "/", label: "Home" },
   { href: "/image", label: "Image" },
-  { href: "/video", label: "Video", badge: "Demo" },
+  { href: "/video", label: "Video" },
   { href: "/audio", label: "Audio", badge: "Demo" },
 ];
 

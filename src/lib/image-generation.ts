@@ -152,12 +152,24 @@ export const buildPollinationsImageUrl = (
   imageUrl.searchParams.set("nologo", "true");
   imageUrl.searchParams.set("cacheBust", cacheBust);
 
-  const finalImageUrl = imageUrl.toString();
+  const sourceUrl = imageUrl.toString();
 
   return {
-    imageUrl: finalImageUrl,
+    sourceUrl,
     seed: normalizedSeed,
     composedPrompt,
     resolution: formatResolution(width, height),
   };
+};
+
+export const buildInternalImageUrl = (
+  sourceUrl: string,
+  requestId: string,
+) => {
+  const searchParams = new URLSearchParams({
+    url: sourceUrl,
+    requestId,
+  });
+
+  return `/api/image-file?${searchParams.toString()}`;
 };

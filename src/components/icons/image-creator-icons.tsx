@@ -205,3 +205,55 @@ export const DownloadIcon = ({ className = "size-4" }: IconProps) => (
     <path d="M5 18.5h14" />
   </svg>
 );
+
+export const FilmIcon = ({ className = "size-4" }: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="M7 5v14" />
+    <path d="M17 5v14" />
+    <path d="M3 9h4M3 15h4M17 9h4M17 15h4" />
+  </svg>
+);
+
+export const MotionIcon = ({ className = "size-4" }: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M3 12h7" />
+    <path d="M14 12h7" />
+    <path d="m7 8 4 4-4 4" />
+    <path d="m13 8 4 4-4 4" />
+  </svg>
+);
+
+export const ClockIcon = ({ className = "size-4" }: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.8v4.8l3.2 1.9" />
+  </svg>
+);

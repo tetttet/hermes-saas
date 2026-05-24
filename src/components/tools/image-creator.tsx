@@ -24,6 +24,8 @@ import type {
 } from "./image-creator/types";
 import { buildDownloadName } from "./image-creator/utils";
 
+const MAX_IMAGE_LOAD_RETRIES = 3;
+
 const ImageCreator = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -109,15 +111,8 @@ const ImageCreator = () => {
     const filename = buildDownloadName(item);
 
     try {
-      const response = await fetch("/api/download-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: item.url,
-          filename,
-        }),
+      const response = await fetch(item.url, {
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -146,6 +141,37 @@ const ImageCreator = () => {
     void downloadGeneratedImage(item);
   };
 
+  const requestGeneratedImage = async (
+    payload: GenerateImageRequestBody,
+  ): Promise<GenerateImageSuccessResponse> => {
+    const response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") ?? "";
+      const fallbackMessage = "Failed to generate image.";
+
+      if (contentType.includes("application/json")) {
+        const data = (await response.json()) as GenerateImageErrorResponse;
+        throw Object.assign(new Error(data.error || fallbackMessage), {
+          details: data.details ?? [],
+        });
+      }
+
+      const text = await response.text();
+      throw Object.assign(new Error(text || fallbackMessage), {
+        details: [] as string[],
+      });
+    }
+
+    return (await response.json()) as GenerateImageSuccessResponse;
+  };
+
   const handleGeneratedImageLoad = (
     id: string,
     naturalWidth: number,
@@ -159,13 +185,69 @@ const ImageCreator = () => {
   };
 
   const handleGeneratedImageError = (id: string) => {
+    const failedItem = generatedImages.find((item) => item.id === id);
+
+    if (!failedItem) {
+      return;
+    }
+
+    if (failedItem.retryCount < MAX_IMAGE_LOAD_RETRIES) {
+      const nextRetryCount = failedItem.retryCount + 1;
+
+      setErrorMessage(null);
+      setErrorDetails([]);
+
+      void (async () => {
+        try {
+          const refreshedImage = await requestGeneratedImage({
+            prompt: failedItem.basePrompt,
+            style: failedItem.style,
+            aspectRatio: failedItem.aspectRatio,
+            resolution: failedItem.resolution,
+            quality: failedItem.quality,
+            seed: failedItem.seed,
+          });
+
+          updateGalleryItem(id, {
+            url: refreshedImage.imageUrl,
+            seed: refreshedImage.seed,
+            resolution: refreshedImage.resolution,
+            retryCount: nextRetryCount,
+            loadState: "loading",
+          });
+        } catch (error) {
+          const details =
+            typeof error === "object" &&
+            error !== null &&
+            "details" in error &&
+            Array.isArray(error.details)
+              ? (error.details as string[])
+              : [];
+
+          updateGalleryItem(id, {
+            retryCount: nextRetryCount,
+            loadState: "error",
+          });
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Failed to generate a fresh image URL.",
+          );
+          setErrorDetails(details);
+        }
+      })();
+
+      return;
+    }
+
     updateGalleryItem(id, { loadState: "error" });
     setErrorMessage(
       "The generated image URL was returned, but the browser could not load it.",
     );
     setErrorDetails([
-      "pollinations did not finish serving the image to the browser",
-      "try generating again to get a fresh image URL",
+      `pollinations failed ${MAX_IMAGE_LOAD_RETRIES + 1} times for this image`,
+      "hermes already retried with fresh image URLs automatically",
+      "try generating again if pollinations is still unstable",
     ]);
   };
 
@@ -202,30 +284,7 @@ const ImageCreator = () => {
         seed: seed.trim() || undefined,
       };
 
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type") ?? "";
-        const fallbackMessage = "Failed to generate image.";
-
-        if (contentType.includes("application/json")) {
-          const data = (await response.json()) as GenerateImageErrorResponse;
-          setErrorDetails(data.details ?? []);
-          throw new Error(data.error || fallbackMessage);
-        }
-
-        const text = await response.text();
-        setErrorDetails([]);
-        throw new Error(text || fallbackMessage);
-      }
-
-      const data = (await response.json()) as GenerateImageSuccessResponse;
+      const data = await requestGeneratedImage(payload);
 
       const createdAt = Date.now();
       pushToGallery({
@@ -238,6 +297,7 @@ const ImageCreator = () => {
         style,
         quality,
         seed: data.seed,
+        retryCount: 0,
         createdAt,
         loadState: "loading",
       });
@@ -247,6 +307,23 @@ const ImageCreator = () => {
           "the browser could not reach /api/generate-image",
           "check that the Next.js server is running and reload the page",
         ]);
+      }
+
+      const details =
+        typeof error === "object" &&
+        error !== null &&
+        "details" in error &&
+        Array.isArray(error.details)
+          ? (error.details as string[])
+          : error instanceof TypeError
+            ? [
+                "the browser could not reach /api/generate-image",
+                "check that the Next.js server is running and reload the page",
+              ]
+            : [];
+
+      if (details.length > 0) {
+        setErrorDetails(details);
       }
 
       setErrorMessage(

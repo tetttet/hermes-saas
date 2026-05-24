@@ -1,33 +1,36 @@
-/* eslint-disable @next/next/no-img-element */
-
 import Image from "next/image";
 import { useState } from "react";
 import {
   ChevronIcon,
   DownloadIcon,
 } from "@/components/icons/image-creator-icons";
-import type { GeneratedImageItem } from "./types";
+import type { GeneratedVideoItem } from "./types";
 import {
-  aspectRatioToCssValue,
-  buildImageTags,
+  buildVideoTags,
   formatCreatedAt,
+  getVideoPreviewAspectRatio,
 } from "./utils";
 
-type ImageGalleryCardProps = {
-  item: GeneratedImageItem;
-  onDownload: (item: GeneratedImageItem) => void;
-  onImageLoad: (id: string, naturalWidth: number, naturalHeight: number) => void;
-  onImageError: (id: string) => void;
+type VideoGalleryCardProps = {
+  item: GeneratedVideoItem;
+  onDownload: (item: GeneratedVideoItem) => void;
+  onVideoLoadedMetadata: (
+    id: string,
+    videoWidth: number,
+    videoHeight: number,
+    durationSeconds: number,
+  ) => void;
+  onVideoError: (id: string) => void;
 };
 
 const PROMPT_EXPAND_THRESHOLD = 120;
 
-export const ImageGalleryCard = ({
+export const VideoGalleryCard = ({
   item,
   onDownload,
-  onImageLoad,
-  onImageError,
-}: ImageGalleryCardProps) => {
+  onVideoLoadedMetadata,
+  onVideoError,
+}: VideoGalleryCardProps) => {
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const isPromptExpandable =
     item.basePrompt.trim().length > PROMPT_EXPAND_THRESHOLD;
@@ -36,85 +39,74 @@ export const ImageGalleryCard = ({
     <article className="group relative h-full w-full overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 shadow-[0_22px_70px_rgba(0,0,0,0.26)] transition hover:border-white/16">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_44%)] opacity-0 transition duration-300 group-hover:opacity-100" />
 
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onDownload(item)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onDownload(item);
-          }
-        }}
-        className="relative cursor-pointer outline-none"
-      >
+      <div className="relative">
         <div
           className="relative overflow-hidden rounded-[20px] border border-white/8 bg-[#131419]"
           style={{
-            aspectRatio: aspectRatioToCssValue(item.aspectRatio),
+            aspectRatio: getVideoPreviewAspectRatio(item),
           }}
         >
-          <div className="absolute inset-0">
-            <img
-              key={item.url}
-              src={item.url}
-              alt={item.basePrompt}
-              referrerPolicy="no-referrer"
-              loading="lazy"
-              onLoad={(event) => {
-                onImageLoad(
-                  item.id,
-                  event.currentTarget.naturalWidth,
-                  event.currentTarget.naturalHeight,
-                );
-              }}
-              onError={() => onImageError(item.id)}
-              className={[
-                "absolute inset-0 h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]",
-                item.loadState === "ready" ? "opacity-100" : "opacity-0",
-              ].join(" ")}
-            />
-
-            {item.loadState !== "ready" ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#131419] p-4">
-                {item.loadState === "error" ? (
-                  <div className="max-w-[11rem] text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffb0b0]">
-                      Load failed
-                    </p>
-                    <p className="mt-2 text-[11px] leading-5 text-white/48">
-                      Pollinations still did not return the image after Hermes
-                      retried fresh URLs.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="mx-auto rounded-[22px] border border-white/10 bg-white p-2.5 shadow-[0_12px_38px_rgba(255,255,255,0.12)]">
-                      <Image
-                        src="/logo.png"
-                        alt="Hermes loading"
-                        width={42}
-                        height={42}
-                        className="size-[42px] animate-[logoFloat_2.2s_ease-in-out_infinite] rounded-[14px] object-cover"
-                      />
-                    </div>
-
-                    {item.retryCount > 0 ? (
-                      <p className="mt-3 text-[11px] leading-5 text-white/48">
-                        Retrying with a fresh image URL...
-                      </p>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            ) : null}
+          <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-[#2563eb]/30 bg-[#0f172a]/75 px-2.5 py-1 text-[10px] font-bold tracking-[0.04em] text-[#8fbdff] backdrop-blur-sm">
+            MP4 stream
           </div>
+
+          <video
+            key={item.url}
+            src={item.url}
+            controls={item.loadState === "ready"}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={(event) => {
+              onVideoLoadedMetadata(
+                item.id,
+                event.currentTarget.videoWidth,
+                event.currentTarget.videoHeight,
+                event.currentTarget.duration,
+              );
+            }}
+            onError={() => onVideoError(item.id)}
+            className={[
+              "absolute inset-0 h-full w-full object-contain bg-[#131419] transition duration-500 group-hover:scale-[1.01]",
+              item.loadState === "ready" ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+          />
+
+          {item.loadState !== "ready" ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#131419] p-4">
+              {item.loadState === "error" ? (
+                <div className="max-w-[13rem] text-center">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffb0b0]">
+                    Stream failed
+                  </p>
+                  <p className="mt-2 text-[11px] leading-5 text-white/48">
+                    Pollinations did not return a playable MP4 to the browser.
+                    Generate again for a fresh attempt.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className="mx-auto rounded-[22px] border border-white/10 bg-white p-2.5 shadow-[0_12px_38px_rgba(255,255,255,0.12)]">
+                    <Image
+                      src="/logo.png"
+                      alt="Hermes loading"
+                      width={42}
+                      height={42}
+                      className="size-[42px] animate-[logoFloat_2.2s_ease-in-out_infinite] rounded-[14px] object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
 
       <div className="relative mt-3 flex flex-col space-y-3 px-1">
         <div className="flex flex-wrap gap-1.5">
-          {buildImageTags(item).map((tag, tagIndex) => (
+          {buildVideoTags(item).map((tag, tagIndex) => (
             <span
               key={`${item.id}-${tagIndex}-${tag}`}
               className={[
@@ -179,11 +171,7 @@ export const ImageGalleryCard = ({
             onClick={() => onDownload(item)}
             className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[11px] font-bold text-white/72 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
           >
-            {item.loadState === "loading"
-              ? "Download image"
-              : item.loadState === "error"
-                ? "Try download"
-                : "Download image"}
+            Download MP4
             <DownloadIcon className="size-3.5" />
           </button>
         </div>
