@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import Hamburger from "@/components/icons/hamburger";
+import { LockIcon } from "@/components/icons/image-creator-icons";
 import { navItems } from "@/lib/site";
 
 const menuVariants = {
@@ -86,6 +88,8 @@ const Header = () => {
   const pathname = usePathname();
   const previousPathname = useRef(pathname);
   const [isOpen, setIsOpen] = useState(false);
+  const isItemActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   useEffect(() => {
     if (previousPathname.current !== pathname) {
@@ -113,7 +117,7 @@ const Header = () => {
             <Link
               href="/"
               aria-label="Home"
-              className="group relative z-[90] mr-5 flex size-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 hover:scale-[1.04]"
+              className="group relative z-[90] mr-2 flex size-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 hover:scale-[1.04]"
             >
               <div className="mx-auto rounded-2xl border border-white/10 bg-white p-2">
                 <Image
@@ -127,37 +131,57 @@ const Header = () => {
               </div>
             </Link>
 
-            <nav className="-ml-4 hidden items-center gap-0 xl:flex">
+            <nav className="hidden items-center xl:flex">
               {navItems.map((item, index) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
+                const isActive = isItemActive(item.href);
 
                 return (
                   <React.Fragment key={item.label}>
-                    {index === 1 || index === 4 || index === 6 ? (
-                      <span className="mx-3 h-5 w-px bg-white/10" />
+                    {item.locked ? (
+                      <span
+                        aria-disabled="true"
+                        className={[
+                          "flex h-10 cursor-not-allowed items-center gap-2 whitespace-nowrap rounded-xl px-2.5 text-[16px] font-medium tracking-[-0.01em]",
+                          isActive ? "text-white" : "text-[#7a7a7e]",
+                        ].join(" ")}
+                      >
+                        <LockIcon
+                          className={[
+                            "size-3.5",
+                            isActive ? "text-white/72" : "text-white/28",
+                          ].join(" ")}
+                        />
+                        <span>{item.label}</span>
+
+                        {item.badge ? (
+                          <span className="-ml-0.5 -mt-2 rounded-md bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white/90">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        aria-current={isActive ? "page" : undefined}
+                        className={[
+                          "group flex h-10 items-center whitespace-nowrap rounded-xl px-2.5 text-[16px] font-medium tracking-[-0.01em] transition-colors duration-200",
+                          isActive
+                            ? "text-white"
+                            : "text-[#a2a2a5] hover:text-white",
+                        ].join(" ")}
+                      >
+                        <span>{item.label}</span>
+                      </Link>
+                    )}
+
+                    {index === 0 ? (
+                      <span
+                        aria-hidden="true"
+                        className="mx-1.5 text-[16px] font-medium text-white/22"
+                      >
+                        |
+                      </span>
                     ) : null}
-
-                    <Link
-                      href={item.href}
-                      aria-current={isActive ? "page" : undefined}
-                      className={[
-                        "group flex h-10 items-center gap-2 whitespace-nowrap rounded-xl px-2.5 text-[16px] font-medium tracking-[-0.01em] transition-colors duration-200",
-                        isActive
-                          ? "text-white"
-                          : "text-[#a2a2a5] hover:text-white",
-                      ].join(" ")}
-                    >
-                      <span>{item.label}</span>
-
-                      {item.badge ? (
-                        <span className="-ml-0.5 -mt-2 rounded-md bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white/90">
-                          {item.badge}
-                        </span>
-                      ) : null}
-                    </Link>
                   </React.Fragment>
                 );
               })}
@@ -179,76 +203,10 @@ const Header = () => {
               Sign up
             </a>
 
-            <button
-              type="button"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
-              aria-expanded={isOpen}
-              onClick={() => setIsOpen((value) => !value)}
-              className="relative z-[90] flex size-12 items-center justify-center rounded-2xl text-white outline-none transition-transform duration-300 hover:scale-105 active:scale-95 xl:hidden"
-            >
-              <span className="relative block h-8 w-8 overflow-visible">
-                <motion.span
-                  animate={
-                    isOpen
-                      ? {
-                          y: 0,
-                          rotate: 45,
-                          width: 24,
-                        }
-                      : {
-                          y: -7,
-                          rotate: 0,
-                          width: 22,
-                        }
-                  }
-                  transition={{
-                    duration: 0.36,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="absolute left-1/2 top-1/2 h-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-                />
-
-                <motion.span
-                  animate={
-                    isOpen
-                      ? {
-                          opacity: 0,
-                          scaleX: 0,
-                        }
-                      : {
-                          opacity: 1,
-                          scaleX: 1,
-                        }
-                  }
-                  transition={{
-                    duration: 0.28,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="absolute left-1/2 top-1/2 h-0.5 w-[22px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-                />
-
-                <motion.span
-                  animate={
-                    isOpen
-                      ? {
-                          y: 0,
-                          rotate: -45,
-                          width: 24,
-                        }
-                      : {
-                          y: 7,
-                          rotate: 0,
-                          width: 22,
-                        }
-                  }
-                  transition={{
-                    duration: 0.36,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="absolute left-1/2 top-1/2 h-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-                />
-              </span>
-            </button>
+            <Hamburger
+              isOpen={isOpen}
+              onToggle={() => setIsOpen((value) => !value)}
+            />
           </div>
         </div>
       </header>
@@ -257,6 +215,7 @@ const Header = () => {
         {isOpen ? (
           <motion.div
             key="mobile-menu"
+            id="mobile-navigation"
             initial="closed"
             animate="open"
             exit="closed"
@@ -276,50 +235,77 @@ const Header = () => {
                   className="flex flex-col gap-1"
                 >
                   {navItems.map((item) => {
-                    const isActive =
-                      item.href === "/"
-                        ? pathname === "/"
-                        : pathname.startsWith(item.href);
+                    const isActive = isItemActive(item.href);
 
                     return (
                       <motion.div key={item.label} variants={itemVariants}>
-                        <Link
-                          href={item.href}
-                          aria-current={isActive ? "page" : undefined}
-                          className={[
-                            "group flex min-h-16 items-center justify-between rounded-2xl px-1 py-1 transition-all duration-300 ease-out",
-                            isActive
-                              ? "text-white"
-                              : "text-[#9f9fa3] hover:text-white",
-                          ].join(" ")}
-                        >
-                          <span className="flex min-w-0 items-center gap-3">
-                            <span
-                              className={[
-                                "size-1.5 shrink-0 rounded-full transition-all duration-300",
-                                isActive
-                                  ? "bg-white opacity-100"
-                                  : "bg-white/25 opacity-70 group-hover:bg-white/70",
-                              ].join(" ")}
-                            />
+                        {item.locked ? (
+                          <span
+                            aria-disabled="true"
+                            className={[
+                              "flex min-h-16 cursor-not-allowed items-center justify-between rounded-2xl px-1 py-1",
+                              isActive ? "text-white" : "text-[#7e7e82]",
+                            ].join(" ")}
+                          >
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span
+                                className={[
+                                  "size-1.5 shrink-0 rounded-full",
+                                  isActive ? "bg-white opacity-100" : "bg-white/18",
+                                ].join(" ")}
+                              />
 
-                            <span className="truncate text-[30px] font-semibold leading-none tracking-[-0.045em] sm:text-[36px]">
-                              {item.label}
+                              <span className="truncate text-[30px] font-semibold leading-none tracking-[-0.045em] sm:text-[36px]">
+                                {item.label}
+                              </span>
+                            </span>
+
+                            <span className="ml-4 flex shrink-0 items-center gap-2">
+                              {item.badge ? (
+                                <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold leading-none text-white/90">
+                                  {item.badge}
+                                </span>
+                              ) : null}
+
+                              <LockIcon
+                                className={[
+                                  "size-4",
+                                  isActive ? "text-white/72" : "text-white/28",
+                                ].join(" ")}
+                              />
                             </span>
                           </span>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            aria-current={isActive ? "page" : undefined}
+                            className={[
+                              "group flex min-h-16 items-center justify-between rounded-2xl px-1 py-1 transition-all duration-300 ease-out",
+                              isActive
+                                ? "text-white"
+                                : "text-[#9f9fa3] hover:text-white",
+                            ].join(" ")}
+                          >
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span
+                                className={[
+                                  "size-1.5 shrink-0 rounded-full transition-all duration-300",
+                                  isActive
+                                    ? "bg-white opacity-100"
+                                    : "bg-white/25 opacity-70 group-hover:bg-white/70",
+                                ].join(" ")}
+                              />
 
-                          <span className="ml-4 flex shrink-0 items-center gap-2">
-                            {item.badge ? (
-                              <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold leading-none text-white/90">
-                                {item.badge}
+                              <span className="truncate text-[30px] font-semibold leading-none tracking-[-0.045em] sm:text-[36px]">
+                                {item.label}
                               </span>
-                            ) : null}
+                            </span>
 
-                            <span className="translate-x-0 text-[22px] leading-none text-white/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-white">
+                            <span className="ml-4 shrink-0 text-[22px] leading-none text-white/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-white">
                               →
                             </span>
-                          </span>
-                        </Link>
+                          </Link>
+                        )}
                       </motion.div>
                     );
                   })}

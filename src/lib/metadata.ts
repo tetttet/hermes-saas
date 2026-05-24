@@ -9,11 +9,10 @@ type PageMetadataInput = {
 
 const defaultKeywords = [
   "Hermes AI",
-  "AI workflows",
-  "multimodal AI",
+  "AI image generator",
   "image generation",
-  "video generation",
-  "audio generation",
+  "photo generation",
+  "image studio",
 ];
 
 export function createPageMetadata({

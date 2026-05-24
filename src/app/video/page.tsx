@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { createPageMetadata } from "@/lib/metadata";
-import VideoCreator from "@/components/tools/video-creator";
+import EmptyRoutePage from "@/components/tools/empty-route-page";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Video Studio",
-  description: "Hermes/AI video page for Pollinations-powered video workflows.",
-  keywords: ["AI video generation", "video workflows", "Pollinations video"],
+  title: "Video",
+  description: "Video page placeholder for Hermes/AI.",
+  keywords: ["video", "placeholder"],
 });
 
 const VideoPage = () => {
-  return <VideoCreator />;
+  return <EmptyRoutePage />;
 };
 
 export default VideoPage;

@@ -1,4 +1,5 @@
 import type { AspectRatio, GeneratedImageItem } from "./types";
+import { imageProviderTagLabels } from "./constants";
 
 export const aspectRatioToCssValue = (aspectRatio: AspectRatio) =>
   aspectRatio.replace(":", " / ");
@@ -61,6 +62,7 @@ export const formatActualImageSize = (item: GeneratedImageItem) => {
 
 export const buildImageTags = (item: GeneratedImageItem) =>
   [
+    imageProviderTagLabels[item.provider],
     item.style,
     item.quality,
     item.aspectRatio,

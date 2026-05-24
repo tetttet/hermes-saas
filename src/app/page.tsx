@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import { createPageMetadata } from "@/lib/metadata";
+import EmptyRoutePage from "@/components/tools/empty-route-page";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Home",
-  description: "Hermes/AI home page for image, video and audio workflows.",
-  keywords: ["Hermes AI home"],
+  description: "Home page placeholder for Hermes/AI.",
+  keywords: ["home", "workspace"],
 });
 
 const HomePage = () => {
-  return (
-    <div>HomePage</div>
-  )
-}
+  return <EmptyRoutePage />;
+};
 
-export default HomePage
+export default HomePage;

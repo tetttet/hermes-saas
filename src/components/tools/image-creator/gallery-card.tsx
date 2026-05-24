@@ -31,22 +31,40 @@ export const ImageGalleryCard = ({
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const isPromptExpandable =
     item.basePrompt.trim().length > PROMPT_EXPAND_THRESHOLD;
+  const canDownload = item.url.trim().length > 0;
+  const loadingStatusMessage =
+    item.generationStatusMessage ??
+    (item.retryCount > 0 ? "Dublios is refreshing the image..." : null);
 
   return (
     <article className="group relative h-full w-full overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 shadow-[0_22px_70px_rgba(0,0,0,0.26)] transition hover:border-white/16">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),transparent_44%)] opacity-0 transition duration-300 group-hover:opacity-100" />
 
       <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onDownload(item)}
+        role={canDownload ? "button" : undefined}
+        tabIndex={canDownload ? 0 : -1}
+        aria-disabled={!canDownload}
+        onClick={() => {
+          if (!canDownload) {
+            return;
+          }
+
+          onDownload(item);
+        }}
         onKeyDown={(event) => {
+          if (!canDownload) {
+            return;
+          }
+
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onDownload(item);
           }
         }}
-        className="relative cursor-pointer outline-none"
+        className={[
+          "relative outline-none",
+          canDownload ? "cursor-pointer" : "cursor-default",
+        ].join(" ")}
       >
         <div
           className="relative overflow-hidden rounded-[20px] border border-white/8 bg-[#131419]"
@@ -55,38 +73,40 @@ export const ImageGalleryCard = ({
           }}
         >
           <div className="absolute inset-0">
-            <img
-              key={item.url}
-              src={item.url}
-              alt={item.basePrompt}
-              referrerPolicy="no-referrer"
-              loading={item.loadState === "loading" ? "eager" : "lazy"}
-              fetchPriority={item.loadState === "loading" ? "high" : "auto"}
-              decoding="async"
-              onLoad={(event) => {
-                onImageLoad(
-                  item.id,
-                  event.currentTarget.naturalWidth,
-                  event.currentTarget.naturalHeight,
-                );
-              }}
-              onError={() => onImageError(item.id)}
-              className={[
-                "absolute inset-0 h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]",
-                item.loadState === "ready" ? "opacity-100" : "opacity-0",
-              ].join(" ")}
-            />
+            {item.url ? (
+              <img
+                key={item.url}
+                src={item.url}
+                alt={item.basePrompt}
+                referrerPolicy="no-referrer"
+                loading={item.loadState === "loading" ? "eager" : "lazy"}
+                fetchPriority={item.loadState === "loading" ? "high" : "auto"}
+                decoding="async"
+                onLoad={(event) => {
+                  onImageLoad(
+                    item.id,
+                    event.currentTarget.naturalWidth,
+                    event.currentTarget.naturalHeight,
+                  );
+                }}
+                onError={() => onImageError(item.id)}
+                className={[
+                  "absolute inset-0 h-full w-full object-contain transition duration-500 group-hover:scale-[1.02]",
+                  item.loadState === "ready" ? "opacity-100" : "opacity-0",
+                ].join(" ")}
+              />
+            ) : null}
 
             {item.loadState !== "ready" ? (
               <div className="absolute inset-0 flex items-center justify-center bg-[#131419] p-4">
                 {item.loadState === "error" ? (
                   <div className="max-w-[11rem] text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffb0b0]">
-                      Load failed
+                    <p className="text-xs font-black text-[#ffb0b0]">
+                      {item.generationStatusLabel ?? "Failed"}
                     </p>
                     <p className="mt-2 text-[11px] leading-5 text-white/48">
-                      Pollinations still did not return the image after Hermes
-                      retried fresh URLs.
+                      {item.errorMessage ??
+                        "The image could not be loaded. Please try again."}
                     </p>
                   </div>
                 ) : (
@@ -101,9 +121,15 @@ export const ImageGalleryCard = ({
                       />
                     </div>
 
-                    {item.retryCount > 0 ? (
-                      <p className="mt-3 text-[11px] leading-5 text-white/48">
-                        Retrying with a fresh image URL...
+                    {item.generationStatusLabel ? (
+                      <p className="mt-3 text-[11px] font-bold text-white/65">
+                        {item.generationStatusLabel}
+                      </p>
+                    ) : null}
+
+                    {loadingStatusMessage ? (
+                      <p className="mt-2 text-[11px] leading-5 text-white/48">
+                        {loadingStatusMessage}
                       </p>
                     ) : null}
                   </div>
@@ -179,7 +205,8 @@ export const ImageGalleryCard = ({
           <button
             type="button"
             onClick={() => onDownload(item)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[11px] font-bold text-white/72 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+            disabled={!canDownload}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[11px] font-bold text-white/72 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {item.loadState === "loading"
               ? "Download image"

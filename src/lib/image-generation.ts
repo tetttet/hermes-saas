@@ -12,17 +12,63 @@ export type GenerateImageErrorResponse = {
   details?: string[];
 };
 
-export type GenerateImageSuccessResponse = {
-  imageUrl: string;
+export type ImageGenerationProvider = "dublios-power" | "ai-horde";
+
+export type HordeStatusLabel =
+  | "Waiting in queue"
+  | "Generating"
+  | "Done"
+  | "Failed";
+
+export type HordeGenerationStartResponse = {
+  requestId: string;
   seed: string;
   resolution: string;
+  statusLabel: "Waiting in queue";
 };
+
+export type HordeGenerationPollResponse =
+  | {
+      state: "waiting";
+      statusLabel: "Waiting in queue";
+      statusMessage?: string;
+      queuePosition?: number;
+      waitTimeSeconds?: number;
+    }
+  | {
+      state: "generating";
+      statusLabel: "Generating";
+      statusMessage?: string;
+    }
+  | {
+      state: "done";
+      statusLabel: "Done";
+      statusMessage?: string;
+      imageDataUrl: string;
+      mimeType: string;
+      seed?: string;
+    }
+  | {
+      state: "failed";
+      statusLabel: "Failed";
+      error: string;
+      statusMessage?: string;
+    };
 
 const POLLINATIONS_BASE_URL = "https://image.pollinations.ai/prompt";
 const DEFAULT_IMAGE_WIDTH = 1024;
 const DEFAULT_IMAGE_HEIGHT = 1024;
 const WIDESCREEN_IMAGE_WIDTH = 1280;
 const WIDESCREEN_IMAGE_HEIGHT = 720;
+const HORDE_DEFAULT_MODEL = "stable_diffusion";
+const HORDE_DEFAULT_CFG_SCALE = 7.5;
+const HORDE_DEFAULT_SAMPLER = "k_euler_a";
+
+const hordeQualitySteps: Record<string, number> = {
+  Standard: 18,
+  HD: 24,
+  Ultra: 30,
+};
 
 const styleDirections: Record<string, string> = {
   Cinematic:
@@ -40,11 +86,8 @@ const styleDirections: Record<string, string> = {
 };
 
 const aspectRatioDirections: Record<string, string> = {
-  "1:1": "balanced square framing",
-  "16:9": "wide cinematic composition",
-  "9:16": "vertical mobile-first composition",
-  "4:3": "classic editorial composition",
-  "3:4": "vertical portrait composition",
+  "1:1": "1:1 balanced square framing",
+  "16:9": "16:9 wide cinematic composition",
 };
 
 const qualityDirections: Record<string, string> = {
@@ -133,15 +176,25 @@ const parseResolution = (resolution?: string, aspectRatio?: string) => {
 export const normalizeImageSeed = (seed?: string) =>
   typeof seed === "string" && seed.trim() ? seed.trim() : String(Date.now());
 
+export const getImageDimensions = (requestBody: GenerateImageRequestBody) => {
+  const { width, height } = parseResolution(
+    requestBody.resolution,
+    requestBody.aspectRatio,
+  );
+
+  return {
+    width,
+    height,
+    resolution: formatResolution(width, height),
+  };
+};
+
 export const buildPollinationsImageUrl = (
   requestBody: GenerateImageRequestBody,
 ) => {
   const composedPrompt = buildImagePrompt(requestBody);
   const encodedPrompt = encodeURIComponent(composedPrompt);
-  const { width, height } = parseResolution(
-    requestBody.resolution,
-    requestBody.aspectRatio,
-  );
+  const { width, height, resolution } = getImageDimensions(requestBody);
   const normalizedSeed = normalizeImageSeed(requestBody.seed);
   const cacheBust = String(Date.now());
   const imageUrl = new URL(`${POLLINATIONS_BASE_URL}/${encodedPrompt}`);
@@ -158,6 +211,44 @@ export const buildPollinationsImageUrl = (
     sourceUrl,
     seed: normalizedSeed,
     composedPrompt,
-    resolution: formatResolution(width, height),
+    resolution,
+  };
+};
+
+export const buildHordeGenerationPayload = (
+  requestBody: GenerateImageRequestBody,
+) => {
+  const composedPrompt = buildImagePrompt(requestBody);
+  const normalizedSeed = normalizeImageSeed(requestBody.seed);
+  const { width, height, resolution } = getImageDimensions(requestBody);
+  const steps =
+    hordeQualitySteps[requestBody.quality ?? ""] ?? hordeQualitySteps.HD;
+
+  return {
+    payload: {
+      prompt: composedPrompt,
+      params: {
+        width,
+        height,
+        steps,
+        cfg_scale: HORDE_DEFAULT_CFG_SCALE,
+        sampler_name: HORDE_DEFAULT_SAMPLER,
+        n: 1,
+        seed: normalizedSeed,
+      },
+      models: [HORDE_DEFAULT_MODEL],
+      nsfw: false,
+      censor_nsfw: true,
+      trusted_workers: false,
+      validated_backends: true,
+      slow_workers: true,
+      r2: false,
+      shared: true,
+      replacement_filter: true,
+      allow_downgrade: true,
+    },
+    seed: normalizedSeed,
+    composedPrompt,
+    resolution,
   };
 };

@@ -1,8 +1,11 @@
+import type {
+  HordeStatusLabel,
+  ImageGenerationProvider,
+} from "@/lib/image-generation";
+
 export type AspectRatio = "1:1" | "16:9";
 
 export type Quality = "Standard" | "HD" | "Ultra";
-
-export type WorkflowMode = "create" | "edit";
 
 export type Style =
   | "Cinematic"
@@ -16,6 +19,7 @@ export type GeneratedImageItem = {
   id: string;
   url: string;
   mimeType: string;
+  provider: ImageGenerationProvider;
   basePrompt: string;
   aspectRatio: AspectRatio;
   resolution: string;
@@ -23,8 +27,12 @@ export type GeneratedImageItem = {
   naturalHeight?: number;
   style: Style;
   quality: Quality;
+  requestId?: string;
   seed?: string;
   retryCount: number;
   createdAt: number;
+  generationStatusLabel?: HordeStatusLabel;
+  generationStatusMessage?: string;
+  errorMessage?: string;
   loadState: "loading" | "ready" | "error";
 };

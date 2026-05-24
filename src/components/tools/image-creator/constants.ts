@@ -1,7 +1,10 @@
+import type { ImageGenerationProvider } from "@/lib/image-generation";
 import type { AspectRatio, Quality, Style } from "./types";
 
 export const MAX_GALLERY_ITEMS = 8;
 export const DEFAULT_ASPECT_RATIO: AspectRatio = "1:1";
+export const DEFAULT_IMAGE_PROVIDER: ImageGenerationProvider =
+  "dublios-power";
 
 export const resolutions: Record<AspectRatio, string[]> = {
   "1:1": ["1024×1024", "1536×1536", "2048×2048"],
@@ -29,6 +32,27 @@ export const styles: Style[] = [
 ];
 
 export const qualityOptions: Quality[] = ["Standard", "HD", "Ultra"];
+
+export const imageGenerationProviders = [
+  {
+    value: "dublios-power",
+    label: "Dublios",
+  },
+  {
+    value: "ai-horde",
+    label: "AI Horde",
+  },
+] as const;
+
+export const imageProviderLabels: Record<ImageGenerationProvider, string> = {
+  "dublios-power": "Dublios",
+  "ai-horde": "AI Horde",
+};
+
+export const imageProviderTagLabels: Record<ImageGenerationProvider, string> = {
+  "dublios-power": "Dublios",
+  "ai-horde": "AI Horde",
+};
 
 export const aspectRatioLabels: Record<AspectRatio, string> = {
   "1:1": "1:1",

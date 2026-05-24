@@ -3,13 +3,13 @@ import { createPageMetadata } from "@/lib/metadata";
 import EmptyRoutePage from "@/components/tools/empty-route-page";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Audio",
-  description: "Audio page placeholder for Hermes/AI.",
-  keywords: ["audio", "placeholder"],
+  title: "Chats",
+  description: "Chats page placeholder for Hermes/AI.",
+  keywords: ["chats", "placeholder"],
 });
 
-const AudioPage = () => {
+const ChatsPage = () => {
   return <EmptyRoutePage />;
 };
 
-export default AudioPage;
+export default ChatsPage;
