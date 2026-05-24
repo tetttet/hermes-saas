@@ -60,7 +60,9 @@ export const ImageGalleryCard = ({
               src={item.url}
               alt={item.basePrompt}
               referrerPolicy="no-referrer"
-              loading="lazy"
+              loading={item.loadState === "loading" ? "eager" : "lazy"}
+              fetchPriority={item.loadState === "loading" ? "high" : "auto"}
+              decoding="async"
               onLoad={(event) => {
                 onImageLoad(
                   item.id,

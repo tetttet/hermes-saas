@@ -161,15 +161,3 @@ export const buildPollinationsImageUrl = (
     resolution: formatResolution(width, height),
   };
 };
-
-export const buildInternalImageUrl = (
-  sourceUrl: string,
-  requestId: string,
-) => {
-  const searchParams = new URLSearchParams({
-    url: sourceUrl,
-    requestId,
-  });
-
-  return `/api/image-file?${searchParams.toString()}`;
-};

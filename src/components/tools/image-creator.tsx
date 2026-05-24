@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import {
+  buildPollinationsImageUrl,
   type GenerateImageErrorResponse,
   type GenerateImageRequestBody,
-  type GenerateImageSuccessResponse,
 } from "@/lib/image-generation";
 import {
   DEFAULT_ASPECT_RATIO,
@@ -75,8 +75,7 @@ const ImageCreator = () => {
   const browserLoadingCount = generatedImages.filter(
     (item) => item.loadState === "loading",
   ).length;
-  const isGenerationLocked = isGenerating || browserLoadingCount > 0;
-  const currentImageIsLoading = !isGenerating && browserLoadingCount > 0;
+  const isGenerationLocked = isGenerating;
 
   const handleAspectChange = (value: AspectRatio) => {
     setAspectRatio(value);
@@ -111,11 +110,26 @@ const ImageCreator = () => {
     const filename = buildDownloadName(item);
 
     try {
-      const response = await fetch(item.url, {
+      const response = await fetch("/api/download-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: item.url,
+          filename,
+        }),
         cache: "no-store",
       });
 
       if (!response.ok) {
+        const contentType = response.headers.get("content-type") ?? "";
+
+        if (contentType.includes("application/json")) {
+          const data = (await response.json()) as GenerateImageErrorResponse;
+          throw new Error(data.error || "Failed to download image.");
+        }
+
         throw new Error("Failed to download image.");
       }
 
@@ -141,35 +155,15 @@ const ImageCreator = () => {
     void downloadGeneratedImage(item);
   };
 
-  const requestGeneratedImage = async (
-    payload: GenerateImageRequestBody,
-  ): Promise<GenerateImageSuccessResponse> => {
-    const response = await fetch("/api/generate-image", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+  const createGeneratedImage = (payload: GenerateImageRequestBody) => {
+    const { sourceUrl, seed: generatedSeed, resolution } =
+      buildPollinationsImageUrl(payload);
 
-    if (!response.ok) {
-      const contentType = response.headers.get("content-type") ?? "";
-      const fallbackMessage = "Failed to generate image.";
-
-      if (contentType.includes("application/json")) {
-        const data = (await response.json()) as GenerateImageErrorResponse;
-        throw Object.assign(new Error(data.error || fallbackMessage), {
-          details: data.details ?? [],
-        });
-      }
-
-      const text = await response.text();
-      throw Object.assign(new Error(text || fallbackMessage), {
-        details: [] as string[],
-      });
-    }
-
-    return (await response.json()) as GenerateImageSuccessResponse;
+    return {
+      imageUrl: sourceUrl,
+      seed: generatedSeed,
+      resolution,
+    };
   };
 
   const handleGeneratedImageLoad = (
@@ -197,45 +191,35 @@ const ImageCreator = () => {
       setErrorMessage(null);
       setErrorDetails([]);
 
-      void (async () => {
-        try {
-          const refreshedImage = await requestGeneratedImage({
-            prompt: failedItem.basePrompt,
-            style: failedItem.style,
-            aspectRatio: failedItem.aspectRatio,
-            resolution: failedItem.resolution,
-            quality: failedItem.quality,
-            seed: failedItem.seed,
-          });
+      try {
+        const refreshedImage = createGeneratedImage({
+          prompt: failedItem.basePrompt,
+          style: failedItem.style,
+          aspectRatio: failedItem.aspectRatio,
+          resolution: failedItem.resolution,
+          quality: failedItem.quality,
+          seed: failedItem.seed,
+        });
 
-          updateGalleryItem(id, {
-            url: refreshedImage.imageUrl,
-            seed: refreshedImage.seed,
-            resolution: refreshedImage.resolution,
-            retryCount: nextRetryCount,
-            loadState: "loading",
-          });
-        } catch (error) {
-          const details =
-            typeof error === "object" &&
-            error !== null &&
-            "details" in error &&
-            Array.isArray(error.details)
-              ? (error.details as string[])
-              : [];
-
-          updateGalleryItem(id, {
-            retryCount: nextRetryCount,
-            loadState: "error",
-          });
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "Failed to generate a fresh image URL.",
-          );
-          setErrorDetails(details);
-        }
-      })();
+        updateGalleryItem(id, {
+          url: refreshedImage.imageUrl,
+          seed: refreshedImage.seed,
+          resolution: refreshedImage.resolution,
+          retryCount: nextRetryCount,
+          loadState: "loading",
+        });
+      } catch (error) {
+        updateGalleryItem(id, {
+          retryCount: nextRetryCount,
+          loadState: "error",
+        });
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Failed to generate a fresh image URL.",
+        );
+        setErrorDetails([]);
+      }
 
       return;
     }
@@ -251,7 +235,7 @@ const ImageCreator = () => {
     ]);
   };
 
-  const handleGenerateImage = async () => {
+  const handleGenerateImage = () => {
     if (isGenerationLocked) {
       return;
     }
@@ -284,7 +268,7 @@ const ImageCreator = () => {
         seed: seed.trim() || undefined,
       };
 
-      const data = await requestGeneratedImage(payload);
+      const data = createGeneratedImage(payload);
 
       const createdAt = Date.now();
       pushToGallery({
@@ -302,29 +286,7 @@ const ImageCreator = () => {
         loadState: "loading",
       });
     } catch (error) {
-      if (error instanceof TypeError) {
-        setErrorDetails([
-          "the browser could not reach /api/generate-image",
-          "check that the Next.js server is running and reload the page",
-        ]);
-      }
-
-      const details =
-        typeof error === "object" &&
-        error !== null &&
-        "details" in error &&
-        Array.isArray(error.details)
-          ? (error.details as string[])
-          : error instanceof TypeError
-            ? [
-                "the browser could not reach /api/generate-image",
-                "check that the Next.js server is running and reload the page",
-              ]
-            : [];
-
-      if (details.length > 0) {
-        setErrorDetails(details);
-      }
+      setErrorDetails([]);
 
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to generate image.",
@@ -343,11 +305,7 @@ const ImageCreator = () => {
         : referenceImage
           ? "Reference ready"
           : "Empty canvas";
-  const generateButtonLabel = isGenerating
-    ? "Generating..."
-    : currentImageIsLoading
-      ? "Waiting for image..."
-      : "Generate Image";
+  const generateButtonLabel = isGenerating ? "Generating..." : "Generate Image";
 
   return (
     <section className="min-h-[calc(100vh-4.5rem)] bg-[#141414] text-white">
